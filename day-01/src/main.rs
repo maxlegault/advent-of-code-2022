@@ -22,7 +22,10 @@ fn main() {
         elf_calories.push(current_count);
     }
 
-    println!("Max for elf calories: {}", elf_calories.iter().max().unwrap())
+    println!("Max for elf calories: {}", elf_calories.iter().max().unwrap());
+
+    elf_calories.sort_by(|a, b| b.cmp(a));
+    println!("Sum for top 3 elves: {}", &elf_calories[0..3].iter().sum::<u32>());
 }
 
 // The output is wrapped in a Result to allow matching on errors
