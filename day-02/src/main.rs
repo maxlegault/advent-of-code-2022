@@ -7,19 +7,18 @@ fn main() {
 
     let games: Vec<Game> = lines
         .map(|line| {
-            let values = line
-                .unwrap()
-                .splitn(2, ' ')
-                .map(Weapon::from_letter)
-                .collect::<Vec<Weapon>>();
+            let unwrapped = line.expect("Should have been able to get line");
+            let values: Vec<&str> = unwrapped.splitn(2, ' ').collect();
             return Game {
-                opponent: values[0],
-                mine: values[1],
+                opponent: Weapon::from_letter(values[0]),
+                mine: Weapon::from_letter(values[1]),
+                desired_outcome: Outcome::from_letter(values[1]),
             };
         })
         .collect();
 
-    println!("Sum for all games is {}", games.iter().map(|game| game.calculate_score()).sum::<i32>());
+    println!("Sum for all games v1 is {}", games.iter().map(|game| game.calculate_score_v1()).sum::<i32>());
+    println!("Sum for all games v2 is {}", games.iter().map(|game| game.calculate_score_v2()).sum::<i32>());
 }
 
 #[derive(Copy, Clone)]
@@ -34,12 +33,46 @@ enum Weapon {
 struct Game {
     mine: Weapon,
     opponent: Weapon,
+    desired_outcome: Outcome,
+}
+
+#[derive(Copy, Clone)]
+enum Outcome {
+    Lose,
+    Draw,
+    Win,
 }
 
 impl Game {
-    fn calculate_score(self) -> i32 {
-        let score = self.mine.score();
-        let diff = score - self.opponent.score();
+    fn calculate_score_v1(self) -> i32 {
+        return Game::calculate_score(self.mine, self.opponent);
+    }
+
+    fn calculate_score_v2(self) -> i32 {
+        let mine: Weapon;
+        match self.desired_outcome {
+            Outcome::Draw => mine = self.opponent,
+            Outcome::Win => {
+                match self.opponent {
+                    Weapon::Rock => mine = Weapon::Paper,
+                    Weapon::Paper => mine = Weapon::Scissor,
+                    _ => mine = Weapon::Rock
+                }
+            }
+            _ => {
+                match self.opponent {
+                    Weapon::Rock => mine = Weapon::Scissor,
+                    Weapon::Paper => mine = Weapon::Rock,
+                    _ => mine = Weapon::Paper,
+                }
+            }
+        }
+        return Game::calculate_score(mine, self.opponent);
+    }
+
+    fn calculate_score(mine: Weapon, opponent: Weapon) -> i32 {
+        let score = mine.score();
+        let diff = score - opponent.score();
         if diff == 0 {
             return score + 3;
         }
@@ -66,6 +99,18 @@ impl Weapon {
             return Weapon::Scissor;
         }
         return Weapon::Unknown;
+    }
+}
+
+impl Outcome {
+    fn from_letter(letter: &str) -> Outcome {
+        if letter == "Y" {
+            return Outcome::Draw;
+        }
+        if letter == "Z" {
+            return Outcome::Win;
+        }
+        return Outcome::Lose;
     }
 }
 
