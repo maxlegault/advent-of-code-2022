@@ -8,6 +8,7 @@ fn main() {
         .map(|l| Pair::from_string(l.expect("should have been able to read line")))
         .collect::<Vec<Pair>>();
     println!("complete overlap sum: {}", pairs.iter().map(|p| p.calculate_total_overlap()).sum::<i32>());
+    println!("overlap sum: {}", pairs.iter().map(|p| p.calculate_overlap()).sum::<i32>())
 }
 
 struct Pair {
@@ -34,6 +35,16 @@ impl Pair {
             return 1;
         }
         if self.second.start <= self.first.start && self.second.end >= self.first.end {
+            return 1;
+        }
+        return 0;
+    }
+
+    fn calculate_overlap(&self) -> i32 {
+        if self.first.start >= self.second.start && self.first.start <= self.second.end {
+            return 1;
+        }
+        if self.second.start >= self.first.start && self.second.start <= self.first.end {
             return 1;
         }
         return 0;
