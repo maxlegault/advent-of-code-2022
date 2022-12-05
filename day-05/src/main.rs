@@ -4,9 +4,12 @@ use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
-    let deck = Deck::from_input("./initial-layout.txt");
-    deck.process_instructions("./instructions.txt");
-    println!("top crates: {}", deck.get_top_crates());
+    let deck_1 = Deck::from_input("./initial-layout.txt");
+    deck_1.process_instructions("./instructions.txt");
+    println!("top crates for part 1: {}", deck_1.get_top_crates());
+    let deck_2 = Deck::from_input("./initial-layout.txt");
+    deck_2.process_instructions_9001("./instructions.txt");
+    println!("top crates for part 2: {}", deck_2.get_top_crates());
 }
 
 struct Deck {
@@ -51,6 +54,28 @@ impl Deck {
                 for _ in 0..amount {
                     let char = stacks.get_mut(from_index).unwrap().pop().unwrap();
                     stacks.get_mut(to_index).unwrap().push(char);
+                }
+            }
+        }
+    }
+
+    fn process_instructions_9001(&self, filename: &str) {
+        let lines = read_lines(filename).expect("Should have been able to read instructions file");
+        let mut stacks = self.stacks.borrow_mut();
+        for line_result in lines {
+            if let Ok(line) = line_result {
+                let parts = line.splitn(6, ' ').collect::<Vec<&str>>();
+                let amount: i32 = String::from(parts[1]).parse::<i32>().expect("should have been able to parse amount");
+                let from_index: usize = String::from(parts[3]).parse::<usize>().expect("should have been able to parse from index") - 1;
+                let to_index: usize = String::from(parts[5]).parse::<usize>().expect("should have been able to parse to index") - 1;
+                let mut temp_stack: Vec<char> = Vec::new();
+                for _ in 0..amount {
+                    let char = stacks.get_mut(from_index).unwrap().pop().unwrap();
+                    temp_stack.insert(0, char);
+                }
+                let to_stack = stacks.get_mut(to_index).unwrap();
+                for char in temp_stack {
+                    to_stack.push(char);
                 }
             }
         }
