@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -28,12 +29,13 @@ func (p Point) String() string {
 
 type Rope struct {
 	Head       Point
-	Tail       Point
+	Tails      []Point
 	TailVisits map[string]struct{}
 }
 
-func NewRope() *Rope {
+func NewRope(tailCount int) *Rope {
 	return &Rope{
+		Tails:      make([]Point, tailCount),
 		TailVisits: map[string]struct{}{},
 	}
 }
@@ -52,41 +54,59 @@ func (r *Rope) Move(direction Direction, distance int) {
 		default:
 			log.Panicf("Unknown direction %q", string(direction))
 		}
-		r.moveTailIfRequired()
+		r.moveTailsIfRequired()
 	}
 }
 
-func (r *Rope) moveTailIfRequired() {
-	gapX := r.Head.X - r.Tail.X
-	gapY := r.Head.Y - r.Tail.Y
-	if gapX == -2 {
-		r.Tail.X = r.Head.X + 1
-		r.Tail.Y = r.Head.Y
-	} else if gapX == 2 {
-		r.Tail.X = r.Head.X - 1
-		r.Tail.Y = r.Head.Y
-	} else if gapY == -2 {
-		r.Tail.X = r.Head.X
-		r.Tail.Y = r.Head.Y + 1
-	} else if gapY == 2 {
-		r.Tail.X = r.Head.X
-		r.Tail.Y = r.Head.Y - 1
+func (r *Rope) moveTailsIfRequired() {
+	for i := range r.Tails {
+		r.moveTailIfRequired(i)
 	}
-	r.TailVisits[r.Tail.String()] = struct{}{}
+}
+
+func (r *Rope) moveTailIfRequired(position int) {
+	previous := r.Head
+	if position > 0 {
+		previous = r.Tails[position-1]
+	}
+	gapX := previous.X - r.Tails[position].X
+	gapY := previous.Y - r.Tails[position].Y
+	if math.Abs(float64(gapX)) > 1 && math.Abs(float64(gapY)) > 1 {
+		r.Tails[position].X += gapX / 2
+		r.Tails[position].Y += gapY / 2
+	} else if gapX < -1 {
+		r.Tails[position].X = previous.X + 1
+		r.Tails[position].Y = previous.Y
+	} else if gapX > 1 {
+		r.Tails[position].X = previous.X - 1
+		r.Tails[position].Y = previous.Y
+	} else if gapY < -1 {
+		r.Tails[position].X = previous.X
+		r.Tails[position].Y = previous.Y + 1
+	} else if gapY > 1 {
+		r.Tails[position].X = previous.X
+		r.Tails[position].Y = previous.Y - 1
+	}
+	if position == len(r.Tails)-1 {
+		r.TailVisits[r.Tails[position].String()] = struct{}{}
+	}
 }
 
 func main() {
 	bytes, err := os.ReadFile("./input.txt")
 	handleError(err)
-	rope := NewRope()
+	ropeWithTwoKnots := NewRope(1)
+	ropeWithTenKnots := NewRope(9)
 	for _, line := range strings.Split(string(bytes), "\n") {
 		parts := strings.SplitN(line, " ", 2)
 		direction := Direction(parts[0])
 		distance, err := strconv.Atoi(parts[1])
 		handleError(err)
-		rope.Move(direction, distance)
+		ropeWithTwoKnots.Move(direction, distance)
+		ropeWithTenKnots.Move(direction, distance)
 	}
-	fmt.Printf("The tail visited %d different positions at least once\n", len(rope.TailVisits))
+	fmt.Printf("The tail of the rope with 2 knots visited %d different positions at least once\n", len(ropeWithTwoKnots.TailVisits))
+	fmt.Printf("The tail of the rope with 10 knots visited %d different positions at least once\n", len(ropeWithTenKnots.TailVisits))
 }
 
 func handleError(err error) {
