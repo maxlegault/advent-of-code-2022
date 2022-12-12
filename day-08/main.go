@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"os"
 	"strings"
 )
@@ -26,6 +27,12 @@ func main() {
 		}
 	}
 	println("Number of visible trees:", visibleCount)
+	scenicScores := calculateScenicScores(forest)
+	max := float64(0)
+	for _, score := range scenicScores {
+		max = math.Max(max, score)
+	}
+	println("Highest scenic score:", int(max))
 }
 
 func isTreeVisible(forest [][]rune, treeX int, treeY int) bool {
@@ -64,6 +71,49 @@ func isTreeVisible(forest [][]rune, treeX int, treeY int) bool {
 		}
 	}
 	return visible
+}
+
+func calculateScenicScores(forest [][]rune) []float64 {
+	var scores []float64
+	for x := 0; x < len(forest); x++ {
+		for y := 0; y < len(forest[x]); y++ {
+			scores = append(scores, calculateScenicScore(forest, x, y))
+		}
+	}
+	return scores
+}
+
+func calculateScenicScore(forest [][]rune, x int, y int) float64 {
+	currentHeight := forest[x][y]
+	left := 0
+	for i := x - 1; i >= 0; i-- {
+		left++
+		if forest[i][y] >= currentHeight {
+			break
+		}
+	}
+	right := 0
+	for i := x + 1; i < len(forest); i++ {
+		right++
+		if forest[i][y] >= currentHeight {
+			break
+		}
+	}
+	top := 0
+	for i := y - 1; i >= 0; i-- {
+		top++
+		if forest[x][i] >= currentHeight {
+			break
+		}
+	}
+	bottom := 0
+	for i := y + 1; i < len(forest[x]); i++ {
+		bottom++
+		if forest[x][i] >= currentHeight {
+			break
+		}
+	}
+	return float64(top * right * bottom * left)
 }
 
 func handleError(err error) {
