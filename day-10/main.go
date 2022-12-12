@@ -40,13 +40,16 @@ type Device struct {
 	registers       map[Register]int
 	currentCycle    int
 	signalStrengths []SignalStrength
+	crtRows         [][]rune
 }
 
 func (d *Device) ProcessInstruction(instruction Instruction, value int) {
 	d.checkSignalStrength()
+	d.processDisplay()
 	if instruction == AddXInstruction {
 		d.currentCycle++
 		d.checkSignalStrength()
+		d.processDisplay()
 		d.registers[MainRegister] += value
 	}
 	d.currentCycle++
@@ -61,6 +64,19 @@ func (d *Device) checkSignalStrength() {
 	}
 }
 
+func (d *Device) processDisplay() {
+	rowIndex := (d.currentCycle - 1) / 40
+	if rowIndex >= len(d.crtRows) {
+		d.crtRows = append(d.crtRows, []rune{})
+	}
+	columnIndex := int(math.Mod(float64(d.currentCycle), 40))
+	char := '.'
+	if columnIndex >= d.registers[MainRegister] && columnIndex <= d.registers[MainRegister]+2 {
+		char = '#'
+	}
+	d.crtRows[rowIndex] = append(d.crtRows[rowIndex], char)
+}
+
 func (d *Device) ReportSignalStrengthAfterNCycles(cycleCount int) int {
 	sum := 0
 	for _, signalStrength := range d.signalStrengths {
@@ -69,6 +85,17 @@ func (d *Device) ReportSignalStrengthAfterNCycles(cycleCount int) int {
 		}
 	}
 	return sum
+}
+
+func (d *Device) CRTOutput() string {
+	var output strings.Builder
+	for _, row := range d.crtRows {
+		for _, column := range row {
+			_, _ = output.WriteRune(column)
+		}
+		_, _ = output.WriteString("\n")
+	}
+	return output.String()
 }
 
 func main() {
@@ -86,6 +113,8 @@ func main() {
 		device.ProcessInstruction(instruction, value)
 	}
 	fmt.Printf("The sum of all signal strengths is %d after 220 cycles\n", device.ReportSignalStrengthAfterNCycles(220))
+	fmt.Println("CRT display:")
+	fmt.Println(device.CRTOutput())
 }
 
 func handleError(err error) {
