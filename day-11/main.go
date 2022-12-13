@@ -10,7 +10,13 @@ type MonkeyID int
 
 type WorryLevel float64
 
+func (l WorryLevel) Float64() float64 {
+	return float64(l)
+}
+
 type InspectFunc func(level WorryLevel) WorryLevel
+
+const superMod = float64(11 * 17 * 5 * 13 * 19 * 2 * 3 * 7)
 
 type Monkey struct {
 	ID            MonkeyID
@@ -23,10 +29,11 @@ type Monkey struct {
 	InspectCount  int
 }
 
-func (m *Monkey) Inspect(item WorryLevel) (MonkeyID, WorryLevel) {
+func (m *Monkey) Inspect(item WorryLevel, divider float64) (MonkeyID, WorryLevel) {
 	m.InspectCount++
-	newWorryLevel := math.Floor(float64(m.InspectFunc(item) / 3))
-	if math.Mod(newWorryLevel, m.WorryModulo) == 0 {
+	newWorryLevel := math.Mod(math.Floor(m.InspectFunc(item).Float64()/divider), superMod)
+	mod := math.Mod(newWorryLevel, m.WorryModulo)
+	if mod == 0 {
 		return m.TrueTo, WorryLevel(newWorryLevel)
 	}
 	return m.FalseTo, WorryLevel(newWorryLevel)
@@ -40,16 +47,16 @@ type Squad struct {
 	monkeys []*Monkey
 }
 
-func (s *Squad) ProcessRounds(count int) {
+func (s *Squad) ProcessRounds(count int, divider float64) {
 	for i := 0; i < count; i++ {
-		s.ProcessRound()
+		s.ProcessRound(divider)
 	}
 }
 
-func (s *Squad) ProcessRound() {
+func (s *Squad) ProcessRound(divider float64) {
 	for _, monkey := range s.monkeys {
 		for _, item := range monkey.Items {
-			receiver, worryLevel := monkey.Inspect(item)
+			receiver, worryLevel := monkey.Inspect(item, divider)
 			s.monkeys[receiver].Receive(worryLevel)
 		}
 		monkey.Items = nil
@@ -67,7 +74,19 @@ func (s *Squad) ReportMonkeyBusiness() {
 }
 
 func main() {
-	squad := &Squad{
+	println("Part 1")
+	squad := newSquad()
+	squad.ProcessRounds(20, 3)
+	squad.ReportMonkeyBusiness()
+
+	println("Part 2")
+	squad = newSquad()
+	squad.ProcessRounds(10000, 1)
+	squad.ReportMonkeyBusiness()
+}
+
+func newSquad() *Squad {
+	return &Squad{
 		monkeys: []*Monkey{
 			{
 				ID:          MonkeyID(0),
@@ -135,8 +154,6 @@ func main() {
 			},
 		},
 	}
-	squad.ProcessRounds(20)
-	squad.ReportMonkeyBusiness()
 }
 
 func handleError(err error) {
